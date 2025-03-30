@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panzer Warfare</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Strona główna */
+        #main-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('mainmenubackground.jpg') center/cover;
+        }
+
+        .game-title {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px #000;
+            color: #e0a800;
+            text-align: center;
+        }
+
+        .campaigns {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .campaign-btn {
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            background: rgba(50, 50, 50, 0.7);
+            color: white;
+            border: 2px solid #e0a800;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .campaign-btn:hover {
+            background: rgba(100, 100, 100, 0.7);
+            transform: scale(1.05);
+        }
+
+        .campaign-btn.german {
+            border-color: #6c757d;
+        }
+
+        .campaign-btn.soviet {
+            border-color: #dc3545;
+        }
+
+        /* Ekran wyboru kampanii */
+        .campaign-selection {
+            display: none;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
+                        url('cross.png') center/cover;
+        }
+
+        .campaign-logo {
+            position: absolute;
+            top: 2vh;
+            left: 2vw;
+            width: 15vmin;
+            height: auto;
+            max-width: 150px;
+        }
+
+        .start-campaign-btn {
+            position: absolute;
+            top: 2vh;
+            right: 2vw;
+            padding: 1vh 2vw;
+            font-size: 1.2rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 20vw;
+        }
+
+        .start-campaign-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .units-container {
+            position: absolute;
+            bottom: 5vh;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 2vw;
+            flex-wrap: wrap;
+            padding: 0 2vw;
+            box-sizing: border-box;
+        }
+        
+        .unit-card {
+            width: 30vmin;
+            height: 40vmin;
+            min-width: 150px;
+            min-height: 200px;
+            text-align: center;
+            background: rgba(50, 50, 50, 0.7);
+            border-radius: 1vmin;
+            padding: 1.5vmin;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            border: 0.3vmin solid #e0a800;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .unit-card:hover {
+            transform: scale(1.05);
+            background: rgba(70, 70, 70, 0.7);
+            box-shadow: 0 0 2vmin #e0a800;
+        }
+
+        .unit-card.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 2vmin #4CAF50;
+        }
+
+        .unit-model {
+            width: 90%;
+            height: 70%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 1vmin auto;
+            flex-grow: 1;
+        }
+
+        .unit-name {
+            margin-top: auto;
+            padding-top: 1vmin;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #e0a800;
+            width: 100%;
+        }
+ 
+        /* Ekran gry */
+        .game-screen {
+            display: none;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-map {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+        }
+
+        .german-campaign .game-map {
+            background-image: url('terrain.webp');
+        }
+
+        .soviet-campaign .game-map {
+            background-image: url('terrain.webp');
+        }
+
+        .unit {
+            width: 20vmin;
+            height: 30vmin;
+            background-size: 500% 1800%;
+            position: absolute;
+            transition: top 0.5s linear, left 0.5s linear;
+            transform-origin: center;
+            cursor: pointer;
+        }
+
+        .enemyUnit {
+            width: 20vmin;
+            height: 30vmin;
+            background-size: 500% 1800%;
+            position: absolute;
+            transform-origin: center;
+        }
+
+        .unit.selected {
+            outline: 0.3vmin solid yellow;
+            box-shadow: 0 0 1vmin yellow;
+        }
+
+        .health-bar {
+            position: absolute;
+            top: -1.5vmin;
+            left: 0;
+            width: 100%;
+            height: 0.5vmin;
+            background-color: #333;
+        }
+
+        .health-fill {
+            height: 100%;
+            width: 100%;
+            background-color: #4CAF50;
+            transition: width 0.1s;
+        }
+
+        .battle-indicator {
+            position: absolute;
+            top: -3vmin;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 0.2vmin 0.5vmin;
+            border-radius: 0.3vmin;
+            font-size: 1.2vmin;
+            display: none;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 2vh;
+            left: 2vw;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 2vh;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 1vmin;
+            border-radius: 0.5vmin;
+            text-align: center;
+            max-width: 90%;
+            box-sizing: border-box;
+            font-size: 1.5vmin;
+        }
+
+        /* Ekran zwycięstwa */
+        .victory-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            padding: 2vmin;
+            box-sizing: border-box;
+        }
+
+        .victory-message {
+            font-size: 5vmin;
+            color: gold;
+            margin-bottom: 2vmin;
+            text-align: center;
+            text-shadow: 0.2vmin 0.2vmin 0.4vmin #000;
+        }
+
+        .victory-btn {
+            padding: 1vmin 2vmin;
+            font-size: 2vmin;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0.5vmin;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 20vmin;
+        }
+
+        .victory-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        /* Responsywność - Mobile */
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 2.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .campaigns {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .campaign-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1.2rem;
+            }
+
+            .unit-card {
+                width: 25vmin;
+                height: 30vmin;
+            }
+            
+            .unit-model {
+                width: 20vmin;
+                height: 20vmin;
+            }
+            
+            .unit-name {
+                font-size: 0.9rem;
+            }
+
+            .unit, .enemyUnit {
+                width: 25vmin;
+                height: 35vmin;
+            }
+
+            .victory-message {
+                font-size: 6vmin;
+            }
+
+            .instructions {
+                font-size: 2vmin;
+                bottom: 1vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-title {
+                font-size: 2rem;
+            }
+
+            .unit-card {
+                width: 28vmin;
+                height: 32vmin;
+            }
+            
+            .unit-model {
+                width: 22vmin;
+                height: 22vmin;
+            }
+
+            .unit, .enemyUnit {
+                width: 30vmin;
+                height: 40vmin;
+            }
+
+            .victory-message {
+                font-size: 7vmin;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Strona główna -->
+    <div id="main-menu">
+        <h1 class="game-title">PANZER WARFARE</h1>
+        <div class="campaigns">
+            <button class="campaign-btn german" id="german-campaign-btn">Kampania Niemiecka</button>
+            <button class="campaign-btn soviet" id="soviet-campaign-btn">Kampania Radziecka</button>
+        </div>
+    </div>
+
+    <!-- Ekran wyboru kampanii niemieckiej -->
+    <div id="german-campaign-selection" class="campaign-selection">
+        
+        <button class="start-campaign-btn" id="start-german-campaign">Rozpocznij Kampanię</button>
+        
+        <div class="units-container">
+            <div class="unit-card" data-unit="tiger">
+                <div class="unit-model" style="background-image: url('Tiger2_3d.gif');"></div>
+                <div class="unit-name">Panzer VI Tiger</div>
+            </div>
+            <div class="unit-card" data-unit="panther">
+                <div class="unit-model" style="background-image: url('panther3d.gif');"></div>
+                <div class="unit-name">Panzer V Panther</div>
+            </div>
+            <div class="unit-card" data-unit="stug">
+                <div class="unit-model" style="background-image: url('stug43d.gif');"></div>
+                <div class="unit-name">Stug IV</div>
+            </div>
+            <div class="unit-card" data-unit="leopard">
+                <div class="unit-model" style="background-image: url('leo13d.gif');"></div>
+                <div class="unit-name">Leopard I</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ekran wyboru kampanii radzieckiej -->
+    <div id="soviet-campaign-selection" class="campaign-selection">
+        
+        <button class="start-campaign-btn" id="start-soviet-campaign">Rozpocznij Kampanię</button>
+        
+        <div class="units-container">
+            <div class="unit-card" data-unit="t34">
+                <div class="unit-model" style="background-image: url('t34_3d.gif');"></div>
+                <div class="unit-name">T-34</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kampania niemiecka -->
+    <div id="german-campaign" class="game-screen german-campaign">
+        <button class="back-btn">Powrót do menu</button>
+        <div class="game-map"></div>
+        <div class="instructions">Kliknij na swój czołg aby go wybrać, następnie kliknij gdzie chcesz go przesunąć</div>
+        
+        <!-- Ekran zwycięstwa -->
+        <div class="victory-screen" id="german-victory">
+            <div class="victory-message">ZWYCIĘSTWO!<br>Pokonałeś wrogi czołg!</div>
+            <button class="victory-btn">Powrót do menu głównego</button>
+        </div>
+    </div>
+
+    <!-- Kampania sowiecka -->
+    <div id="soviet-campaign" class="game-screen soviet-campaign">
+        <button class="back-btn">Powrót do menu</button>
+        <div class="game-map"></div>
+        <div class="instructions">Kliknij na swój czołg aby go wybrać, następnie kliknij gdzie chcesz go przesunąć</div>
+        
+        <!-- Ekran zwycięstwa -->
+        <div class="victory-screen" id="soviet-victory">
+            <div class="victory-message">ZWYCIĘSTWO!<br>Pokonałeś wrogi czołg!</div>
+            <button class="victory-btn">Powrót do menu głównego</button>
+        </div>
+    </div>
+
+    <script>
+        // Zmienne globalne
+        let selectedGermanUnit = 'tiger';
+        let selectedSovietUnit = 't34';
+
+        // Mapa plików jednostek
+        const unitFiles = {
+            german: {
+                tiger: { menu: 'Tiger2_3d.gif', game: 'Tiger_3d.png' },
+                panther: { menu: 'panther3d.gif', game: 'panther.png' },
+                stug: { menu: 'stug43d.gif', game: 'stug.png' },
+                leopard: { menu: 'leo13d.gif', game: 'leo.png' }
+            },
+            soviet: {
+                t34: { menu: 't34_3d.gif', game: 't34.png' }
+            }
+        };
+
+        // Szablony jednostek
+        function getUnitTemplate(faction, unitType) {
+            const file = unitFiles[faction][unitType].game;
+            return `
+                <div class="unit" style="left: 10%; top: ${faction === 'german' ? '70%' : '60%'}; background-image: url('${file}');">
+                    <div class="health-bar"><div class="health-fill" data-health="100"></div></div>
+                    <div class="battle-indicator">WALKA!</div>
+                </div>
+            `;
+        }
+
+        function getEnemyTemplate(faction) {
+            const enemyFaction = faction === 'german' ? 'soviet' : 'german';
+            const enemyUnit = faction === 'german' ? 't34' : 'tiger';
+            const file = unitFiles[enemyFaction][enemyUnit].game;
+            return `
+                <div class="enemyUnit" style="left: 70%; top: 60%; background-image: url('${file}');">
+                    <div class="health-bar"><div class="health-fill" data-health="90"></div></div>
+                    <div class="battle-indicator">WALKA!</div>
+                </div>
+            `;
+        }
+
+        // Funkcja powrotu do menu
+        function backToMenu() {
+            document.querySelectorAll('.game-screen, .campaign-selection').forEach(screen => {
+                screen.style.display = 'none';
+                const victoryScreen = screen.querySelector('.victory-screen');
+                if (victoryScreen) victoryScreen.style.display = 'none';
+            });
+            document.getElementById('main-menu').style.display = 'flex';
+        }
+
+        // Wybór jednostki
+        function selectUnit() {
+            const container = this.closest('.units-container');
+            const cards = container.querySelectorAll('.unit-card');
+            
+            cards.forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            this.classList.add('selected');
+            
+            if (container.parentElement.id === 'german-campaign-selection') {
+                selectedGermanUnit = this.dataset.unit;
+            } else {
+                selectedSovietUnit = this.dataset.unit;
+            }
+        }
+
+        // Przełączanie między ekranami
+        document.getElementById('german-campaign-btn').addEventListener('click', () => {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('german-campaign-selection').style.display = 'block';
+        });
+
+        document.getElementById('soviet-campaign-btn').addEventListener('click', () => {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('soviet-campaign-selection').style.display = 'block';
+        });
+
+        // Rozpoczęcie kampanii
+        document.getElementById('start-german-campaign').addEventListener('click', () => {
+            document.getElementById('german-campaign-selection').style.display = 'none';
+            const gameScreen = document.getElementById('german-campaign');
+            gameScreen.style.display = 'block';
+            
+            const gameMap = gameScreen.querySelector('.game-map');
+            gameMap.innerHTML = getUnitTemplate('german', selectedGermanUnit) + getEnemyTemplate('german');
+            
+            initGame('german-campaign');
+        });
+
+        document.getElementById('start-soviet-campaign').addEventListener('click', () => {
+            document.getElementById('soviet-campaign-selection').style.display = 'none';
+            const gameScreen = document.getElementById('soviet-campaign');
+            gameScreen.style.display = 'block';
+            
+            const gameMap = gameScreen.querySelector('.game-map');
+            gameMap.innerHTML = getUnitTemplate('soviet', selectedSovietUnit) + getEnemyTemplate('soviet');
+            
+            initGame('soviet-campaign');
+        });
+
+        // Inicjalizacja wyboru jednostek
+        document.querySelectorAll('.unit-card').forEach(card => {
+            card.addEventListener('click', selectUnit);
+        });
+
+        // Domyślny wybór pierwszego czołgu w każdej kampanii
+        document.querySelector('#german-campaign-selection .unit-card').classList.add('selected');
+        document.querySelector('#soviet-campaign-selection .unit-card').classList.add('selected');
+
+        // Inicjalizacja gry
+        function initGame(campaignId) {
+            const gameScreen = document.getElementById(campaignId);
+            const game = gameScreen.querySelector('.game-map');
+            const units = gameScreen.querySelectorAll('.unit');
+            const enemyUnits = gameScreen.querySelectorAll('.enemyUnit');
+            const victoryScreen = gameScreen.querySelector('.victory-screen');
+            const allUnits = [...units, ...enemyUnits];
+            let selectedUnit = null;
+            let battles = [];
+
+            // Initialize units
+            units.forEach(unit => {
+                unit.dataset.health = 100;
+                unit.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    if (selectedUnit) {
+                        selectedUnit.classList.remove('selected');
+                    }
+                    
+                    selectedUnit = this;
+                    selectedUnit.classList.add('selected');
+                });
+            });
+
+            enemyUnits.forEach(enemy => {
+                enemy.dataset.health = 90;
+            });
+
+            // Obsługa przycisku powrotu
+            gameScreen.querySelector('.back-btn').addEventListener('click', backToMenu);
+
+            // Obsługa przycisku zwycięstwa
+            if (victoryScreen) {
+                victoryScreen.querySelector('.victory-btn').addEventListener('click', backToMenu);
+            }
+
+            game.addEventListener('click', (e) => {
+                // Move selected unit
+                if (selectedUnit && e.target === game) {
+                    const unitRect = selectedUnit.getBoundingClientRect();
+                    const gameRect = game.getBoundingClientRect();
+                    
+                    const unitX = unitRect.left - gameRect.left + unitRect.width / 2;
+                    const unitY = unitRect.top - gameRect.top + unitRect.height / 2;
+                    const targetX = e.clientX - gameRect.left;
+                    const targetY = e.clientY - gameRect.top;
+
+                    // Calculate angle and frame index (REVERSED)
+                    const deltaX = targetX - unitX;
+                    const deltaY = targetY - unitY;
+                    let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+                    angle = (angle + 360 + 180) % 360; // Add 180 degrees to reverse direction
+
+                    const frameIndex = Math.round(angle / 4) % 90; // 90 frames
+                    const col = (5 - (frameIndex % 5) - 1) % 5; // Reversed columns (0→4, 1→3 etc.)
+                    const row = Math.floor(frameIndex / 5); // 18 rows
+
+                    // Set sprite position
+                    selectedUnit.style.backgroundPosition = `${-col * 100}% ${-row * 100}%`;
+
+                    // Calculate new position
+                    const newLeft = Math.max(0, Math.min(
+                        targetX - selectedUnit.clientWidth / 2, 
+                        game.clientWidth - selectedUnit.clientWidth
+                    ));
+                    const newTop = Math.max(0, Math.min(
+                        targetY - selectedUnit.clientHeight / 2,
+                        game.clientHeight - selectedUnit.clientHeight
+                    ));
+
+                    selectedUnit.style.left = `${newLeft}px`;
+                    selectedUnit.style.top = `${newTop}px`;
+                }
+            });
+
+            // Deselect when clicking outside
+            game.addEventListener('click', (e) => {
+                if (e.target === game && selectedUnit) {
+                    selectedUnit.classList.remove('selected');
+                    selectedUnit = null;
+                }
+            });
+
+            // Collision detection and battle system
+            function checkCollisions() {
+                // Clear previous battles
+                battles.forEach(battle => {
+                    clearTimeout(battle.timer);
+                });
+                battles = [];
+                
+                // Hide all battle indicators
+                gameScreen.querySelectorAll('.battle-indicator').forEach(indicator => {
+                    indicator.style.display = 'none';
+                });
+
+                // Check for new collisions with larger detection radius
+                units.forEach(unit => {
+                    if (unit.dataset.health <= 0) return;
+                    
+                    enemyUnits.forEach(enemy => {
+                        if (enemy.dataset.health <= 0) return;
+                        
+                        if (isNearby(unit, enemy)) {
+                            startBattle(unit, enemy);
+                        }
+                    });
+                });
+            }
+
+            function isNearby(unit1, unit2) {
+                const rect1 = unit1.getBoundingClientRect();
+                const rect2 = unit2.getBoundingClientRect();
+                
+                // Larger detection area (1.5x unit size)
+                const detectionMargin = rect1.width * 0.5;
+                
+                return !(
+                    rect1.right + detectionMargin < rect2.left - detectionMargin || 
+                    rect1.left - detectionMargin > rect2.right + detectionMargin || 
+                    rect1.bottom + detectionMargin < rect2.top - detectionMargin || 
+                    rect1.top - detectionMargin > rect2.bottom + detectionMargin
+                );
+            }
+
+            function startBattle(unit, enemy) {
+                // Show battle indicators
+                unit.querySelector('.battle-indicator').style.display = 'block';
+                enemy.querySelector('.battle-indicator').style.display = 'block';
+                
+                // Faster battle (0.5 seconds)
+                const battleDuration = 2000;
+                const interval = 20; // Update every 20ms for smoother animation
+                const steps = battleDuration / interval;
+                
+                // Damage per step - player unit is stronger
+                const unitDamage = (100 / steps); // Enemy has 90 health
+                const enemyDamage = (100 / steps); // Player has 100 health
+                
+                let stepsCompleted = 0;
+                
+                const battleInterval = setInterval(() => {
+                    // Reduce health
+                    unit.dataset.health = Math.max(0, unit.dataset.health - enemyDamage);
+                    enemy.dataset.health = Math.max(0, enemy.dataset.health - unitDamage);
+                    
+                    // Update health bars
+                    unit.querySelector('.health-fill').style.width = `${unit.dataset.health}%`;
+                    enemy.querySelector('.health-fill').style.width = `${enemy.dataset.health}%`;
+                    
+                    stepsCompleted++;
+                    
+                    // End battle when time is up or one unit is destroyed
+                    if (stepsCompleted >= steps || unit.dataset.health <= 0 || enemy.dataset.health <= 0) {
+                        clearInterval(battleInterval);
+                        
+                        // Determine winner and loser
+                        const loser = unit.dataset.health <= 0 ? unit : enemy;
+                        const winner = unit.dataset.health <= 0 ? enemy : unit;
+                        
+                        // Remove loser from the game
+                        if (loser.dataset.health <= 0) {
+                            setTimeout(() => {
+                                loser.remove();
+                                
+                                // If the selected unit was destroyed, deselect it
+                                if (selectedUnit === loser) {
+                                    selectedUnit.classList.remove('selected');
+                                    selectedUnit = null;
+                                }
+                                
+                                // Check if player won (all enemies destroyed)
+                                const remainingEnemies = gameScreen.querySelectorAll('.enemyUnit').length;
+                                if (remainingEnemies === 0) {
+                                    // Show victory screen
+                                    victoryScreen.style.display = 'flex';
+                                }
+                            }, 200);
+                        }
+                        
+                        // Hide indicators after a short delay
+                        setTimeout(() => {
+                            unit.querySelector('.battle-indicator').style.display = 'none';
+                            enemy.querySelector('.battle-indicator').style.display = 'none';
+                        }, 200);
+                        
+                        // Remove battle from array
+                        battles = battles.filter(b => b.unit !== unit && b.enemy !== enemy);
+                    }
+                }, interval);
+                
+                // Store battle reference
+                battles.push({
+                    unit,
+                    enemy,
+                    timer: battleInterval
+                });
+            }
+
+            // Check for collisions more frequently
+            setInterval(checkCollisions, 50);
+        }
+    </script>
+</body>
+</html>
